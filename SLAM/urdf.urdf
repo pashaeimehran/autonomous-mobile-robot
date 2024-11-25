@@ -1,0 +1,30 @@
+<robot name="cartographer_backpack_2d">
+  <!-- Define materials used for different parts of the robot -->
+  <material name="orange">
+    <color rgba="1.0 0.5 0.2 1" /> <!-- RGBA color for orange: Red=1.0, Green=0.5, Blue=0.2, Alpha=1.0 (opaque) -->
+  </material>
+  <material name="gray">
+    <color rgba="0.2 0.2 0.2 1" /> <!-- RGBA color for gray: Red=0.2, Green=0.2, Blue=0.2, Alpha=1.0 (opaque) -->
+  </material>
+
+  <!-- Link for the laser sensor -->
+  <link name="laser">
+    <visual>
+      <origin xyz="0 0 0" /> <!-- Position the visual element at the origin of the laser sensor -->
+      <geometry>
+        <cylinder length="0.05" radius="0.03" /> <!-- Define the laser as a cylinder with specified length and radius -->
+      </geometry>
+      <material name="gray" /> <!-- Assign gray material to the laser -->
+    </visual>
+  </link>
+
+  <!-- Define the base link of the robot -->
+  <link name="base_link"/>
+
+  <!-- Define a joint that connects the laser to the base_link -->
+  <joint name="laser_joint" type="fixed">
+    <parent link="base_link" /> <!-- The parent link is the base_link -->
+    <child link="laser" /> <!-- The child link is the laser -->
+    <origin rpy="0 0 0"  xyz="0.1007 0 0.0558" /> <!-- Position and orientation of the laser with respect to the base_link -->
+  </joint>
+</robot>

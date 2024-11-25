@@ -1,0 +1,38 @@
+# Robot acceleration limits for X, Y, and theta (rotation)
+TrajectoryPlannerROS:
+    acc_lim_th: 3.2         # Max angular acceleration (rad/s^2)
+    acc_lim_x: 2.5          # Max linear acceleration in X direction (m/s^2)
+    acc_lim_y: 2.5          # Max linear acceleration in Y direction (m/s^2)
+  
+    # Robot velocity limits
+    max_vel_x: 0.65         # Max linear velocity in X direction (m/s)
+    min_vel_x: 0.1          # Min linear velocity in X direction (m/s)
+    max_rotational_vel: 1.0 # Max rotational velocity (rad/s)
+    min_in_place_rotational_vel: 0.4 # Minimum in-place rotational velocity (rad/s)
+  
+    # Escape velocity when the robot is stuck
+    escape_vel: -0.1
+  
+    # For holonomic robots (can move in any direction)
+    holonomic_robot: false
+  
+    # Goal tolerance settings
+    xy_goal_tolerance: 0.1  # Goal tolerance for X and Y (meters)
+    yaw_goal_tolerance: 3.14 # Goal tolerance for yaw (radians)
+  
+    # Simulation settings for forward trajectory prediction
+    sim_time: 4               # Time to simulate each trajectory (seconds)
+    sim_granularity: 0.025    # Granularity of the simulation (resolution)
+    vx_samples: 5             # Number of velocity samples in X direction
+    vtheta_samples: 40        # Number of rotational velocity samples
+  
+    # Parameters for scoring trajectories
+    goal_distance_bias: 32    # Bias for goal distance (higher = more emphasis on goal)
+    path_distance_bias: 20    # Bias for path distance (higher = more emphasis on path)
+    occdist_scale: 0.01       # Weight for obstacle distance (scale)
+    heading_lookahead: 0.325  # Lookahead for heading in trajectory planning
+  
+    dwa: true                 # Use Dynamic Window Approach (DWA)
+  
+    prune_plan: true          # Prune the global plan for efficiency
+  

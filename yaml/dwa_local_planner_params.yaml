@@ -1,0 +1,48 @@
+# DWA Planner configuration for robot motion
+DWAPlannerROS:
+
+    # Robot velocity limits
+    max_vel_x: 0.15          # Max linear velocity in X direction (m/s)
+    min_vel_x: -0.15         # Min linear velocity in X direction (m/s)
+    max_vel_y: 0.0           # Max linear velocity in Y direction (m/s)
+    min_vel_y: 0.0           # Min linear velocity in Y direction (m/s)
+  
+    # Maximum translational and rotational velocities
+    max_vel_trans: 0.22      # Max translational velocity (m/s)
+    min_vel_trans: 0.11      # Min translational velocity (m/s)
+    max_vel_theta: 2.75      # Max rotational velocity (rad/s)
+    min_vel_theta: 1.37      # Min rotational velocity (rad/s)
+  
+    # Acceleration limits
+    acc_lim_x: 2.0           # Max acceleration in X direction (m/s^2)
+    acc_lim_y: 0.0           # Max acceleration in Y direction (m/s^2)
+    acc_lim_theta: 2.5       # Max rotational acceleration (rad/s^2)
+  
+    # Goal tolerance parameters
+    xy_goal_tolerance: 0.2   # Goal tolerance for X and Y (meters)
+    yaw_goal_tolerance: 3.14 # Goal tolerance for yaw (radians)
+    latch_xy_goal_tolerance: false # Whether to latch XY goal tolerance
+  
+    # Forward simulation parameters for trajectory prediction
+    sim_time: 4.0            # Time to simulate each trajectory (seconds)
+    vx_samples: 40           # Number of velocity samples in X direction
+    vy_samples: 0            # Number of velocity samples in Y direction
+    vth_samples: 40          # Number of rotational velocity samples
+    controller_frequency: 20.0 # Control frequency (Hz)
+  
+    # Trajectory scoring parameters
+    path_distance_bias: 32.0 # Bias for path distance (higher = more emphasis on path)
+    goal_distance_bias: 20.0 # Bias for goal distance (higher = more emphasis on goal)
+    occdist_scale: 0.02      # Scaling for obstacle distance
+    forward_point_distance: 0.325 # Distance to the forward point for trajectory
+    stop_time_buffer: 0.2    # Buffer time before stopping after goal is reached
+    scaling_speed: 0.25      # Speed scaling factor for trajectory scoring
+    max_scaling_factor: 0.2  # Maximum scaling factor for trajectory optimization
+  
+    # Oscillation prevention
+    oscillation_reset_dist: 0.05
+  
+    # Debugging parameters
+    publish_traj_pc: true    # Whether to publish the trajectory point cloud for debugging
+    publish_cost_grid_pc: true # Whether to publish the cost grid point cloud
+  

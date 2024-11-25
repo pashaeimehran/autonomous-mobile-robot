@@ -1,0 +1,45 @@
+<launch>
+  <!-- Load the robot description (URDF) file from Cartographer ROS package -->
+  <param name="robot_description" textfile="$(find cartographer_ros)/urdf/myrobot.urdf" />
+
+  <!-- Publish the robot's state to ROS, used by visualization tools like RViz -->
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
+
+  <!-- Cartographer Node for SLAM (Simultaneous Localization and Mapping) -->
+  <node name="cartographer_node" pkg="cartographer_ros"
+        type="cartographer_node" args="
+            -configuration_directory $(find cartographer_ros)/configuration_files
+            -configuration_basename myrobot2d.lua"
+        output="screen">
+  </node>
+
+  <!-- Node for generating the occupancy grid map from Cartographer's SLAM data -->
+  <node name="cartographer_occupancy_grid_node" pkg="cartographer_ros"
+        type="cartographer_occupancy_grid_node" args="-resolution 0.05"
+        output="screen" />
+
+  <!-- Move Base Node for robot navigation (path planning and control) -->
+  <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+    <!-- Load common costmap parameters for the global costmap -->
+    <rosparam file="$(find cartographer_ros)/param/costmap_common_params.yaml" command="load" ns="global_costmap"/>
+    
+    <!-- Load common costmap parameters for the local costmap -->
+    <rosparam file="$(find cartographer_ros)/param/costmap_common_params.yaml" command="load" ns="local_costmap"/>
+    
+    <!-- Load specific local costmap parameters -->
+    <rosparam file="$(find cartographer_ros)/param/local_costmap_params.yaml" command="load"/>
+    
+    <!-- Load the parameters for the base local planner used for robot navigation -->
+    <rosparam file="$(find cartographer_ros)/param/base_local_planner_params.yaml" command="load"/> 
+    
+    <!-- Load the DWA (Dynamic Window Approach) parameters for the local planner -->
+    <rosparam file="$(find cartographer_ros)/param/dwa_local_planner_params.yaml" command="load"/>
+    
+    <!-- Load parameters for the global costmap -->
+    <rosparam file="$(find cartographer_ros)/param/global_costmap_params.yaml" command="load"/>
+  </node>
+
+  <!-- Use the pre-configured RViz visualization settings for Cartographer -->
+  <node name="rviz" pkg="rviz" type="rviz" required="true"
+    args="-d $(find cartographer_ros)/configuration_files/demo_2d.rviz" />
+</launch>

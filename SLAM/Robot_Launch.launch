@@ -1,0 +1,26 @@
+<launch>
+  <!-- Load the robot description (URDF file) for visualization and sensor setup -->
+  <param name="robot_description"
+    textfile="$(find cartographer_ros)/urdf/myrobot.urdf" />
+
+  <!-- Launch Cartographer node for SLAM with the specified configuration file -->
+  <node name="cartographer_node" pkg="cartographer_ros"
+        type="cartographer_node" args="
+            -configuration_directory $(find cartographer_ros)/configuration_files
+            -configuration_basename myrobot2d.lua"
+    output="screen">
+    <!-- Remap 'echoes' topic to 'base_link' for sensor data -->
+    <remap from="echoes" to="base_link" />
+  </node>
+
+  <!-- Launch Cartographer Occupancy Grid node to generate a 2D map with 0.05m resolution -->
+  <node name="cartographer_occupancy_grid_node" pkg="cartographer_ros"
+        type="cartographer_occupancy_grid_node" args="-resolution 0.05" />
+
+  <!-- Launch Robot State Publisher to publish the robot's transforms (e.g., joint states, TF) -->
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
+
+  <!-- Launch RViz for visualization with a pre-configured 2D demo configuration -->
+  <node name="rviz" pkg="rviz" type="rviz" required="true"
+    args="-d $(find cartographer_ros)/configuration_files/demo_2d.rviz" />
+</launch>

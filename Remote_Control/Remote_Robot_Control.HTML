@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robot Control</title>
+</head>
+<body>
+    <h1>Robot Control</h1>
+    
+    <!-- Form to move the robot backward -->
+    <form id="moveForwardForm" action="/move_backward" method="get">
+        <button type="button" onclick="submitForm('moveForwardForm')">Move Backward</button>
+    </form>
+    
+    <!-- Form to move the robot forward -->
+    <form id="moveBackwardForm" action="/move_forward" method="get">
+        <button type="button" onclick="submitForm('moveBackwardForm')">Move Forward</button>
+    </form>
+    
+    <!-- Form to turn the robot left -->
+    <form id="turnLeftForm" action="/turn_right" method="get">
+        <button type="button" onclick="submitForm('turnLeftForm')">Turn Right</button>
+    </form>
+    
+    <!-- Form to turn the robot right -->
+    <form id="turnRightForm" action="/turn_left" method="get">
+        <button type="button" onclick="submitForm('turnRightForm')">Turn Left</button>
+    </form>
+    
+    <!-- Form to stop the robot -->
+    <form id="stopForm" action="/stop" method="get">
+        <button type="button" onclick="submitForm('stopForm')">Stop</button>
+    </form>
+
+    <script>
+        // Function to submit a form based on its ID
+        function submitForm(formId) {
+            document.getElementById(formId).submit();
+        }
+
+        // Event listener for keydown events to control robot movement with arrow keys
+        document.addEventListener("keydown", function(event) {
+            var direction = "";
+
+            // Determine the direction based on the key pressed
+            switch(event.key) {
+                case "ArrowUp":
+                    direction = "move_backward";  // Up arrow -> Move backward
+                    break;
+                case "ArrowDown":
+                    direction = "move_forward";   // Down arrow -> Move forward
+                    break;
+                case "ArrowLeft":
+                    direction = "turn_right";     // Left arrow -> Turn right
+                    break;
+                case "ArrowRight":
+                    direction = "turn_left";     // Right arrow -> Turn left
+                    break;
+            }
+
+            // If a valid direction was determined, send a request to move the robot
+            if (direction !== "") {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', '/' + direction, true);
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                xhr.onload = function () {
+                    console.log(xhr.responseText);  // Log the response (optional)
+                };
+                xhr.send();
+            }
+        });
+
+        // Event listener for keyup events to stop the robot when the arrow keys are released
+        document.addEventListener("keyup", function(event) {
+            // Stop the robot when any of the arrow keys are released
+            if (event.key === "ArrowUp" || event.key === "ArrowDown" || event.key === "ArrowLeft" || event.key === "ArrowRight") {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', '/stop', true);  // Send a stop request
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                xhr.onload = function () {
+                    console.log(xhr.responseText);  // Log the response (optional)
+                };
+                xhr.send();
+            }
+        });
+    </script>
+</body>
+</html>

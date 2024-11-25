@@ -1,0 +1,7 @@
+global_costmap:
+  global_frame: map            # Coordinate frame for the global costmap
+  robot_base_frame: base_link  # Frame representing the robot's base
+  update_frequency: 1.0        # Frequency at which the global costmap is updated (Hz)
+  publish_frequency: 0.5       # Frequency at which the global costmap is published (Hz)
+  static_map: true             # Whether to use a preloaded map
+  transform_tolerance: 0.5     # Tolerance for transforming between coordinate frames

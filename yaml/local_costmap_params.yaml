@@ -1,0 +1,11 @@
+local_costmap:
+  global_frame: map            # Coordinate frame for the local costmap
+  robot_base_frame: base_link  # Frame representing the robot's base
+  update_frequency: 10.0       # Frequency at which the local costmap is updated (Hz)
+  publish_frequency: 5.0       # Frequency at which the local costmap is published (Hz)
+  static_map: false            # Whether to use a preloaded map (set to false for real-time mapping)
+  rolling_window: true         # Use a rolling window for local map updates
+  width: 6.0                   # Width of the local costmap (meters)
+  height: 6.0                  # Height of the local costmap (meters)
+  resolution: 0.05             # Resolution of the local costmap (meters per cell)
+  transform_tolerance: 0.5     # Tolerance for transforming between coordinate frames
