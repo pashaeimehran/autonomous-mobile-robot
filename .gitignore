@@ -1,0 +1,19 @@
+# ROS/catkin workspace artifacts
+build/
+devel/
+install/
+logs/
+.catkin_tools/
+
+# Python / tooling
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+.idea/
+.vscode/
+
+# OS/editor
+.DS_Store
+*~
