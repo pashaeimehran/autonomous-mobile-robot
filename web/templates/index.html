@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mobile Robot | Manual Control</title>
+  <style>
+    body { font: 16px system-ui, sans-serif; margin: 3rem auto; max-width: 32rem;
+           padding: 0 1rem; text-align: center; }
+    .pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: .7rem; }
+    button { padding: 1rem .4rem; font: inherit; cursor: pointer; touch-action: none; }
+    .up { grid-column: 2; } .left { grid-column: 1; }
+    .stop { grid-column: 2; } .right { grid-column: 3; }
+    .down { grid-column: 2; }
+    small { display: block; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Manual Robot Control</h1>
+  <p>Hold an arrow key or button to move. Release to stop.</p>
+  <div class="pad">
+    <button class="up" data-drive="forward">&#8593; Forward</button>
+    <button class="left" data-drive="left">&#8592; Left</button>
+    <button class="stop" data-drive="stop">Stop</button>
+    <button class="right" data-drive="right">Right &#8594;</button>
+    <button class="down" data-drive="backward">&#8595; Backward</button>
+  </div>
+  <small>Do not run manual control and autonomous navigation together.</small>
+  <script>
+    const keys = {
+      ArrowUp: "forward", ArrowDown: "backward",
+      ArrowLeft: "left", ArrowRight: "right"
+    };
+    let active = null;
+    let refreshTimer = null;
+
+    function send(command) {
+      fetch(`/api/drive/${command}`, {
+        method: "POST", cache: "no-store", keepalive: command === "stop"
+      }).catch(() => {});
+    }
+    function stop() {
+      if (refreshTimer !== null) clearInterval(refreshTimer);
+      refreshTimer = null;
+      active = null;
+      send("stop");
+    }
+    function start(command) {
+      if (command === "stop") { stop(); return; }
+      if (active === command) return;
+      if (refreshTimer !== null) clearInterval(refreshTimer);
+      active = command;
+      send(command);
+      // Send commands at 10 Hz while held; the C++ watchdog expires after 0.5 s.
+      refreshTimer = setInterval(() => send(command), 100);
+    }
+    document.addEventListener("keydown", (event) => {
+      if (!keys[event.key]) return;
+      event.preventDefault();
+      start(keys[event.key]);
+    });
+    document.addEventListener("keyup", (event) => {
+      if (keys[event.key] === active) { event.preventDefault(); stop(); }
+    });
+    document.querySelectorAll("[data-drive]").forEach((button) => {
+      button.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        button.setPointerCapture(event.pointerId);
+        start(button.dataset.drive);
+      });
+      ["pointerup", "pointercancel", "lostpointercapture"].forEach((type) => {
+        button.addEventListener(type, stop);
+      });
+    });
+    window.addEventListener("blur", stop);
+    window.addEventListener("pagehide", stop);
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) stop();
+    });
+  </script>
+</body>
+</html>

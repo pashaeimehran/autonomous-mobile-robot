@@ -1,0 +1,17 @@
+<launch>
+  <arg name="start_motor_driver" default="true"/>
+
+  <param name="robot_description"
+         textfile="$(find autonomous_mobile_robot)/urdf/mobile_robot.urdf"/>
+  <node pkg="robot_state_publisher" type="robot_state_publisher"
+        name="robot_state_publisher" output="screen"/>
+
+  <node if="$(arg start_motor_driver)" pkg="autonomous_mobile_robot"
+        type="motor_driver_node" name="motor_driver" output="screen">
+    <param name="cmd_timeout_sec" value="0.5"/>
+    <param name="max_linear_mps" value="0.5"/>
+    <param name="max_angular_radps" value="2.75"/>
+    <param name="linear_pwm_per_mps" value="240.0"/>
+    <param name="angular_pwm_per_radps" value="50.0"/>
+  </node>
+</launch>

@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>autonomous_mobile_robot</name>
+  <version>1.0.0</version>
+  <description>
+    ROS 1 differential-drive mobile robot with Cartographer SLAM,
+    DWA navigation, C++ L298N motor control, and Flask teleoperation.
+  </description>
+  <maintainer email="mehran.pashaei.mp@gmail.com">Mehran Pashaei</maintainer>
+  <license>UNLICENSED</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_export_depend>roscpp</build_export_depend>
+  <build_export_depend>geometry_msgs</build_export_depend>
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>cartographer_ros</exec_depend>
+  <exec_depend>move_base</exec_depend>
+  <exec_depend>dwa_local_planner</exec_depend>
+  <exec_depend>navfn</exec_depend>
+  <test_depend>gtest</test_depend>
+
+  <export/>
+</package>
