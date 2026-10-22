@@ -1,128 +1,186 @@
 # Autonomous Mobile Robot
 
-**2D SLAM · Autonomous Navigation · ROS 1 · C++ Motor Control**  
-Bachelor's thesis in Electrical and Electronics Engineering, Ege University
+A Raspberry Pi mobile robot integrating LiDAR-based mapping, autonomous navigation, and browser-based manual control through ROS 1.
 
-A two-wheel-drive mobile robot designed and built around a Raspberry Pi 4B, a 2D LiDAR, and an L298N motor driver. The robot maps indoor environments with Google Cartographer, navigates with the ROS navigation stack, and supports browser-based manual driving.
+**Bachelor's thesis · ROS Noetic · C++ · Python · 2D SLAM**
 
-![Autonomous mobile robot](media/robot_top.jpg)
+![Physical mobile robot](media/robot_top.jpg)
 
-[**Navigation demo**](media/navigation.mp4) · [**Web control demo**](media/web_control.mp4) · [**Generated map**](media/map.jpg) · [**Robot hardware**](media/robot_left.jpg)
+[Navigation demo](media/navigation.mp4) · [Manual-control demo](media/web_control.mp4) · [Generated map](media/map.jpg) · [Hardware view](media/robot_left.jpg)
 
-| Hardware | Software | Control |
-|---|---|---|
-| Raspberry Pi 4B, YDLIDAR X2, L298N, two DC gear motors and caster | ROS Noetic, Cartographer 2D, `move_base`, DWA, Flask | `/cmd_vel` to independent motor direction and PWM outputs |
+## Problem & Motivation
 
-## System architecture
+An indoor mobile robot needs sensing, localization, planning, and motor control to work together. This project explores that integration on a Raspberry Pi platform with a 2D LiDAR and differential-drive motors.
+
+The engineering objective was to build a physical robot that maps indoor space, supports navigation through the ROS stack, and allows manual driving from a browser. The project was developed as a bachelor's thesis in Electrical and Electronics Engineering at Ege University.
+
+## Approach
+
+The work combines physical hardware integration, ROS launch and configuration files, a motor-control interface, and a web controller. Mapping and planning use existing Cartographer and ROS navigation components.
 
 ```mermaid
 flowchart TD
-    L["YDLIDAR X2"] --> S["/scan"]
-    S --> SLAM["Google Cartographer · 2D SLAM"]
-    SLAM --> MAP["Occupancy grid + TF"]
-    MAP --> NAV["move_base · global planner"]
-    S --> COST["Obstacle costmaps"]
-    COST --> DWA["DWA local planner"]
-    NAV --> DWA
-    DWA --> CMD["/cmd_vel · geometry_msgs/Twist"]
-    WEB["Flask web controller · manual mode"] -.-> CMD
-    CMD --> NODE["C++ motor_driver_node"]
-    NODE --> MIX["Differential-drive command mixer"]
-    MIX --> GPIO["pigpio · L298N H-bridge"]
-    GPIO --> MOTORS["Left and right DC motors"]
+    L["2D LiDAR"] --> S["Cartographer SLAM"]
+    S --> M["Map and robot pose"]
+    M --> N["move_base and DWA planning"]
+    L --> C["Obstacle costmaps"]
+    C --> N
+    N --> V["Velocity commands"]
+    W["Manual web controller"] --> V
+    V --> D["C++ motor interface"]
+    D --> H["L298N and drive motors"]
 ```
-
-The navigation and manual-control interfaces publish to the same velocity-command topic. They are operated in separate modes to avoid competing motor commands.
-
-## Engineering design
 
 ### Mapping and navigation
 
-- **Laser-based mapping:** Cartographer builds a 2D occupancy map from `/scan`, with the LiDAR pose fixed relative to `base_link` in the robot description.
-- **Path planning:** `move_base` combines a global path with DWA local trajectory selection and obstacle costmaps.
-- **ROS integration:** Package-relative launch files, a consistent `map` / `base_link` / `laser` frame convention, and centralized planner parameters.
+- The YDLIDAR X2 supplies `/scan` data to Cartographer for 2D mapping and pose estimation.
+- `move_base` uses a Navfn global planner, DWA local planner, and obstacle costmaps to generate velocity commands.
+- Launch files and configuration connect the `map`, `base_link`, and `laser` frames.
+- The navigation launch starts live Cartographer mapping alongside planning; it does not implement a separate saved-map localization mode.
 
-### Motor control
+### Motor control and manual operation
 
-The motor interface translates ROS `geometry_msgs/Twist` commands into H-bridge direction signals and PWM duty cycles. Control is open-loop: command velocities are mapped to PWM demand rather than estimated from wheel encoders.
+The current C++ implementation separates differential-drive command mixing, GPIO operations, and the ROS node. It translates `/cmd_vel` messages into motor direction and PWM demand, bounds commands, scales saturation proportionally, and stops the motors when valid commands stop arriving. The default watchdog timeout is 500 ms.
 
-```text
-left  = linear.x * linear_gain - angular.z * angular_gain
-right = linear.x * linear_gain + angular.z * angular_gain
-```
+Control is open-loop: command velocities are mapped to PWM demand, without wheel-encoder feedback or closed-loop speed control. The Python Flask interface publishes manual velocity commands to the same topic. Manual control and autonomous navigation are operated separately because no command multiplexer is included.
 
-The C++ implementation separates the drive-command mixer from Raspberry Pi GPIO operations and ROS message handling:
+See [software architecture](docs/architecture.md) and [hardware wiring](docs/hardware.md) for component interfaces and configuration details.
 
-- Signed wheel demands determine direction; PWM uses the absolute magnitude.
-- Linear and angular commands are bounded, with proportional scaling when either wheel exceeds 100% duty.
-- An independent 500 ms watchdog stops the motors when velocity commands stop arriving.
-- Input validation, GPIO shutdown handling, and focused unit tests cover the motor-control path.
+## Technologies
 
-| Component | Responsibility |
+| Component | Technology and purpose |
 |---|---|
-| [`include/motor_driver.h`](include/motor_driver.h) | Differential-drive mixing, motor command types, GPIO interface |
-| [`src/motor_driver.cpp`](src/motor_driver.cpp) | L298N direction control and `pigpio` PWM output |
-| [`src/motor_driver_node.cpp`](src/motor_driver_node.cpp) | ROS subscriber, configuration parameters, watchdog |
-| [`test/test_motor_mixing.cpp`](test/test_motor_mixing.cpp) | Forward/reverse, turning, saturation, and input validation |
+| Compute | Raspberry Pi 4B |
+| Sensor | YDLIDAR X2 2D LiDAR |
+| Drive hardware | L298N dual H-bridge, two DC gear motors, and caster |
+| Middleware | ROS 1 Noetic on Ubuntu 20.04 |
+| Mapping | Google Cartographer 2D |
+| Planning | `move_base`, Navfn, DWA, and ROS costmaps |
+| Motor interface | C++14, `roscpp`, and the `pigpio` C library |
+| Manual interface | Python, `rospy`, and Flask |
+| Build and tests | catkin, CMake, and GoogleTest mixer tests |
 
-## Repository structure
+## How to Run
 
-```text
-.
-├── include/       # C++ motor-control interfaces
-├── src/           # Motor driver and ROS node
-├── test/          # C++ unit tests
-├── config/        # Cartographer, costmap, and DWA parameters
-├── launch/        # Bringup, mapping, and navigation
-├── urdf/          # Robot and LiDAR transforms
-├── web/           # Flask controller and HTML interface
-├── docs/          # Architecture and wiring notes
-├── media/         # Robot images, map, and demonstration videos
-├── CMakeLists.txt
-└── package.xml
-```
+### 1. Prepare the target hardware
 
-## ROS interfaces
+Use a Raspberry Pi with Ubuntu 20.04, ROS Noetic, the wired motor driver, and a compatible LiDAR driver. Follow the [hardware notes](docs/hardware.md) for BCM pin numbering, power connections, motor-enable jumpers, and LiDAR placement.
 
-| Topic / frame | Type | Purpose |
-|---|---|---|
-| `/scan` | `sensor_msgs/LaserScan` | LiDAR input for SLAM and costmaps |
-| `/map` | `nav_msgs/OccupancyGrid` | Cartographer map output |
-| `/cmd_vel` | `geometry_msgs/Twist` | Navigation or web-control motor commands |
-| `map → base_link → laser` | TF | Robot pose and fixed sensor transform |
+Required software includes:
 
-## Build and usage
+- ROS packages: `roscpp`, `rospy`, `geometry_msgs`, `robot_state_publisher`, `cartographer_ros`, `move_base`, `dwa_local_planner`, and `navfn`.
+- The `pigpio` C library and development headers, with the GPIO permissions required by the target Pi installation.
+- Python Flask for manual control and RViz for interactive navigation goals.
+- A YDLIDAR-compatible driver configured to publish `/scan` with the `laser` frame.
 
-**Target platform:** Ubuntu 20.04, ROS 1 Noetic, Raspberry Pi with the `pigpio` C library and development headers. ROS dependencies include `roscpp`, `geometry_msgs`, `robot_state_publisher`, `cartographer_ros`, `move_base`, `dwa_local_planner`, and `navfn`. A compatible LiDAR driver must publish `/scan`.
+The LiDAR driver and operating-system setup are not bundled. The package requires `pigpio` at CMake configuration time, so a generic laptop build is not provided by this setup.
 
-Clone the package into a catkin workspace and build:
+### 2. Clone and build
+
+Run in a terminal with ROS Noetic installed:
 
 ```bash
+source /opt/ros/noetic/setup.bash
+mkdir -p ~/catkin_ws/src
+cd ~/catkin_ws/src
+git clone https://github.com/pashaeimehran/autonomous-mobile-robot.git
 cd ~/catkin_ws
 catkin_make
 source devel/setup.bash
 ```
 
-Start the required LiDAR driver separately, then use one of these ROS launch files:
+In each additional ROS terminal, source the ROS installation and workspace:
 
 ```bash
-roslaunch autonomous_mobile_robot bringup.launch
-roslaunch autonomous_mobile_robot mapping.launch
-roslaunch autonomous_mobile_robot navigation.launch
+source /opt/ros/noetic/setup.bash
+source ~/catkin_ws/devel/setup.bash
 ```
 
-`bringup.launch` starts the robot description publisher and motor node. The mapping launch adds Cartographer; navigation adds `move_base` and DWA. **Select one launch mode rather than running all three together.**
+### 3. Select one operating mode
 
-For manual control, start the robot bringup and launch the Flask application in a separate shell while autonomous navigation is inactive:
+Start the ROS master in a separate terminal:
 
 ```bash
+roscore
+```
+
+For mapping or navigation, start the separately installed LiDAR driver using its configured launch file. Confirm that `/scan` is available:
+
+```bash
+rostopic hz /scan
+```
+
+Then run **one** of the following modes. Mapping and navigation already include robot bringup.
+
+| Mode | Command |
+|---|---|
+| Motor interface and robot description only | `roslaunch autonomous_mobile_robot bringup.launch` |
+| Live 2D mapping | `roslaunch autonomous_mobile_robot mapping.launch` |
+| Live mapping and autonomous navigation | `roslaunch autonomous_mobile_robot navigation.launch` |
+
+For navigation, start RViz in another sourced terminal, set its fixed frame to `map`, add map and laser displays, and use **2D Nav Goal** to select a destination after the map and transforms are available. An RViz configuration file is not included.
+
+### 4. Use manual control
+
+Start `bringup.launch` with autonomous navigation inactive. In another sourced terminal:
+
+```bash
+cd ~/catkin_ws/src/autonomous-mobile-robot
 python3 web/app.py
 ```
 
-The browser interface defaults to `127.0.0.1:5000`; keyboard arrows and on-screen controls send velocity commands while pressed. See [architecture](docs/architecture.md) and [hardware wiring](docs/hardware.md) for integration details and GPIO pin assignments.
+Open `http://127.0.0.1:5000` in a browser on that machine. The interface supports arrow keys and on-screen controls. It binds to loopback by default; remote access is not configured by these commands.
 
-## Project demonstrations
+### 5. Run the mixer tests
 
-The demonstration videos show mapping, navigation, and browser-based manual control of the physical robot. The repository includes a modular C++ ROS motor-control implementation.
+On a system where the package builds successfully:
 
-Bachelor's thesis supervised by **Prof. Dr. Musa Alcı**, Ege University.
+```bash
+cd ~/catkin_ws
+catkin_make run_tests_autonomous_mobile_robot
+catkin_test_results build/test_results
+```
+
+The tests cover drive-command mixing, saturation, and invalid inputs. They do not exercise GPIO or validate complete robot navigation. The build still requires the package's ROS and `pigpio` dependencies.
+
+## Results & Validation Scope
+
+### Original project demonstrations
+
+| Artifact | Evidence available |
+|---|---|
+| [Navigation video](media/navigation.mp4) | Recorded physical-robot navigation demonstration |
+| [Manual-control video](media/web_control.mp4) | Recorded browser-based manual driving |
+| [Generated map](media/map.jpg) | Example mapping output |
+| [Robot photographs](media/robot_left.jpg) | Physical platform and hardware integration |
+
+![Example map from the project](media/map.jpg)
+
+These artifacts document the original thesis project. The repository now contains a modular C++ motor-control implementation added during a later refactoring. The original demonstrations should not be treated as hardware validation of that later implementation; a new hardware run of the current C++ version is not documented here.
+
+### Current limitations
+
+- No quantified navigation success rate, localization error, or trajectory benchmark is supplied.
+- The motor interface does not publish wheel odometry or estimate measured wheel velocity. Motion estimates available to the local planner are therefore limited.
+- Mapping is configured without encoder odometry or an IMU.
+- Manual and navigation commands share `/cmd_vel` and must not be used concurrently.
+- The software watchdog handles missing commands; it is not an electrical emergency stop.
+
+## Repository Guide
+
+| Path | Purpose |
+|---|---|
+| [`include/motor_driver.h`](include/motor_driver.h) | Drive mixer, command types, and GPIO interface |
+| [`src/motor_driver.cpp`](src/motor_driver.cpp) | Direction and PWM control |
+| [`src/motor_driver_node.cpp`](src/motor_driver_node.cpp) | ROS subscriber, parameters, and watchdog |
+| [`test/test_motor_mixing.cpp`](test/test_motor_mixing.cpp) | Motor-mixing unit tests |
+| `config/` | Mapping, costmap, and planner parameters |
+| `launch/` | Bringup, mapping, and navigation modes |
+| `urdf/` | Robot and sensor transforms |
+| `web/` | Flask controller and browser interface |
+| `docs/` | Architecture and hardware notes |
+| `media/` | Photographs, map, and demonstration videos |
+
+## Academic Context
+
+Bachelor's thesis as part of the national 2209-A University Student Research Support Programme (TÜBİTAK) in Electrical and Electronics Engineering, Ege University. Supervised by Prof. Dr. Musa Alcı. 
